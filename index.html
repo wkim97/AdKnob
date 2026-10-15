@@ -128,6 +128,15 @@
       margin-top: 0.6rem;
     }
 
+    hr.section-divider {
+      max-width: calc(860px - 2.5rem);
+      height: 0;
+      margin: 0 auto;
+      border: 0;
+      border-top: 1px solid #e5e7eb;
+      background: none;
+    }
+
     .section {
       padding-top: 2.15rem;
       padding-bottom: 2.15rem;
@@ -161,6 +170,10 @@
       border-radius: 10px;
       padding: 0.65rem 0.8rem;
       text-align: center;
+    }
+
+    .highlights-row-4 .highlight-chip {
+      flex-basis: 150px;
     }
 
     .highlight-chip strong {
@@ -629,38 +642,15 @@
             </p>
           </div>
 
-          <div class="teaser">
-            <img src="./static/images/teaser.png" alt="AdKnob overview: an ad control token sets ad intensity, and attention-guided attribution labels ad sentences">
-            <p class="teaser-caption">
-              Given a user request and an advertiser's brand and ad copy, <strong>AdKnob</strong> (a) controls how
-              prominently the ad appears through an ad control token, from a brief mention at
-              <code>[AD_LV_1]</code> to a brand-centered response at <code>[AD_LV_4]</code>, and (b) labels which
-              sentences are advertising by tracing their attention back to the brand and ad copy tokens.
-            </p>
-          </div>
-
-          <div class="highlights-row">
-            <div class="highlight-chip">
-              <strong>An ad intensity knob</strong>
-              <span>New ad control tokens aligned via DPO give one model uniformly spaced ad intensity levels</span>
-            </div>
-            <div class="highlight-chip">
-              <strong>Real-time ad labeling</strong>
-              <span>Reuses the attention weights from generation, about 3&nbsp;ms per response and over 500&times; faster than the strongest baseline</span>
-            </div>
-            <div class="highlight-chip">
-              <strong>Preferred by people</strong>
-              <span>Human evaluators prefer AdKnob over existing LLM-native ad methods up to 89.6% of the time</span>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="motivation" style="background: #fbfcfd;">
+<hr class="section-divider">
+
+<section class="section" id="motivation">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Unaddressed Questions in LLM-Native Advertising</h2>
     <p class="results-intro">
@@ -689,8 +679,21 @@
         service serves.
       </p>
     </div>
+
+    <h3 class="result-category-title">AdKnob answers both</h3>
+    <div class="teaser" style="margin-top: 0.6rem;">
+      <img src="./static/images/teaser.png" alt="AdKnob overview: an ad control token sets ad intensity, and attention-guided attribution labels ad sentences">
+      <p class="teaser-caption has-text-centered">
+        Given a user request and an advertiser's brand and ad copy, <strong>AdKnob</strong> (a) controls how
+        prominently the ad appears through an ad control token, from a brief mention at
+        <code>[AD_LV_1]</code> to a brand-centered response at <code>[AD_LV_4]</code>, and (b) labels which
+        sentences are advertising by tracing their attention back to the brand and ad copy tokens.
+      </p>
+    </div>
   </div>
 </section>
+
+<hr class="section-divider">
 
 <section class="section" id="demo">
   <div class="page-container content">
@@ -771,7 +774,9 @@
   </div>
 </section>
 
-<section class="section" id="method" style="background: #fbfcfd;">
+<hr class="section-divider">
+
+<section class="section" id="method">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Method</h2>
 
@@ -824,6 +829,8 @@
   </div>
 </section>
 
+<hr class="section-divider">
+
 <section class="section" id="dataset">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">MI-KnobSet</h2>
@@ -833,7 +840,7 @@
       Generated Native Ads 2024 dataset and extended to a conversational setting.
     </p>
 
-    <div class="highlights-row" style="margin-top: 0; margin-bottom: 1.2rem;">
+    <div class="highlights-row highlights-row-4" style="margin-top: 0; margin-bottom: 1.2rem;">
       <div class="highlight-chip">
         <strong>10 meta topics</strong>
         <span>Banking, cars, gaming, healthcare, shopping, and more</span>
@@ -886,7 +893,9 @@
   </div>
 </section>
 
-<section class="section" id="results" style="background: #fbfcfd;">
+<hr class="section-divider">
+
+<section class="section" id="results">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Results</h2>
     <p class="results-intro">
@@ -1010,6 +1019,8 @@
     </p>
   </div>
 </section>
+
+<hr class="section-divider">
 
 <section class="section" id="bibtex">
   <div class="page-container content">
