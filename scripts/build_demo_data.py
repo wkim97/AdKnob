@@ -13,7 +13,7 @@ import numpy as np
 
 src = sys.argv[1]
 # Default threshold shown in the demo (the paper's quantitative evaluation uses 0.005).
-tau_default = float(sys.argv[2]) if len(sys.argv) > 2 else 0.008
+tau_default = float(sys.argv[2]) if len(sys.argv) > 2 else 0.01
 dst = os.path.join(os.path.dirname(__file__), "..", "static", "data", "demo_data.js")
 
 raw = json.load(open(src))

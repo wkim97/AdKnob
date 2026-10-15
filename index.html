@@ -256,6 +256,24 @@
       margin-top: 0.45rem;
     }
 
+    .fig-grid-2x2 {
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .fig-grid-2x2 .fig-item {
+      flex: 1 1 calc(50% - 0.4rem);
+      max-width: calc(50% - 0.4rem);
+    }
+
+    @media screen and (max-width: 560px) {
+      .fig-grid-2x2 .fig-item {
+        flex-basis: 100%;
+        max-width: 100%;
+      }
+    }
+
     .fig-legend {
       max-width: 520px;
       width: 100%;
@@ -476,7 +494,7 @@
     }
 
     .chat-role {
-      flex: 0 0 5.6rem;
+      flex: 0 0 7.2rem;
       font-family: 'Google Sans', 'Noto Sans', sans-serif;
       font-size: 0.78rem;
       font-weight: 700;
@@ -496,6 +514,12 @@
     .chat-bubble.user,
     .chat-bubble.advertiser {
       background: #f3f4f6;
+    }
+
+    .chat-bubble.provider {
+      background: #fff;
+      border: 1px dashed #d1d5db;
+      color: #4b5563;
     }
 
     .chat-bubble.assistant {
@@ -745,6 +769,7 @@
       <a href="#motivation">Motivation</a>
       <a href="#demo">Demo</a>
       <a href="#method">Method</a>
+      <a href="#dataset">MI-KnobSet</a>
       <a href="#results">Results</a>
       <a href="#bibtex">BibTeX</a>
     </div>
@@ -836,7 +861,7 @@
 
 <section class="section" id="motivation" style="background: #fbfcfd;">
   <div class="page-container content">
-    <h2 class="title section-title has-text-centered">Why AdKnob?</h2>
+    <h2 class="title section-title has-text-centered">Unaddressed Questions in LLM-Native Advertising</h2>
     <p class="results-intro">
       LLM services such as OpenAI, Perplexity and xAI are moving toward advertising inside generated answers. Unlike
       banners or sponsored links, these <em>LLM-native ads</em> are woven into free-form responses, which makes them
@@ -917,6 +942,10 @@
           <div class="chat-bubble user" id="demo-user"></div>
         </div>
         <div class="chat-row">
+          <div class="chat-role">Service provider</div>
+          <div class="chat-bubble provider" id="demo-provider"></div>
+        </div>
+        <div class="chat-row">
           <div class="chat-role">AdKnob</div>
           <div style="flex: 1 1 auto; min-width: 0;">
             <div class="chat-bubble assistant" id="demo-response"></div>
@@ -988,22 +1017,72 @@
         prompt. At inference, a sentence is labeled as an ad when its average attribution exceeds a threshold &tau;.
       </p>
     </div>
-
-    <div class="component-card">
-      <h3>MI-KnobSet: Multi-Level Ad Intensity Preference Dataset</h3>
-      <p>
-        Training needs preference data across several intensity levels, which did not exist. MI-KnobSet extends the
-        Webis Generated Native Ads 2024 dataset to a conversational setting over 10 commercial topics, with 3,946
-        training and 913 test instances, 25 candidate responses per instance, and 47,352 preference pairs. Candidates
-        are scored by an advertisement score (brand hit rate weighted by sentiment, plus relevance to the ad copy)
-        and an LLM-judged response quality score. The advertisement score correlates with human-perceived ad
-        intensity at Spearman &rho; = 0.91.
-      </p>
-    </div>
   </div>
 </section>
 
-<section class="section" id="results">
+<section class="section" id="dataset">
+  <div class="page-container content">
+    <h2 class="title section-title has-text-centered">MI-KnobSet</h2>
+    <p class="results-intro">
+      Training AdKnob needs preference pairs across multiple ad intensity levels, and no such dataset existed.
+      MI-KnobSet is the first multi-level ad intensity preference dataset for LLM-native ads, built on the Webis
+      Generated Native Ads 2024 dataset and extended to a conversational setting.
+    </p>
+
+    <div class="highlights-row" style="margin-top: 0; margin-bottom: 1.2rem;">
+      <div class="highlight-chip">
+        <strong>10 meta topics</strong>
+        <span>Banking, cars, gaming, healthcare, shopping, and more</span>
+      </div>
+      <div class="highlight-chip">
+        <strong>3,946 / 913</strong>
+        <span>Training / test instances of (user request, brand, ad copy)</span>
+      </div>
+      <div class="highlight-chip">
+        <strong>98,650 candidates</strong>
+        <span>25 candidate responses per training instance</span>
+      </div>
+      <div class="highlight-chip">
+        <strong>47,352 pairs</strong>
+        <span>4 levels &times; 3 rejected responses per instance</span>
+      </div>
+    </div>
+
+    <div class="component-card">
+      <h3>Construction</h3>
+      <p>
+        The Webis dataset pairs short keyword queries with brands and ad-integrated responses. GPT-4o turns each
+        keyword query into a natural user request and writes an ad copy describing the brand's key qualities, giving
+        instances of (user request, brand, ad copy). For each training instance, GPT-4o then generates 25 candidate
+        responses, five from each of five system prompts with increasing ad integration, from "subtle" to
+        "maximum".
+      </p>
+    </div>
+
+    <div class="component-card">
+      <h3>Scoring</h3>
+      <p>
+        Every candidate gets two scores. The <strong>advertisement score</strong> combines how often the brand is
+        mentioned (weighted by the sentiment of those mentions) with how closely the response conveys the ad copy, and
+        correlates with human-perceived ad intensity at Spearman &rho; = 0.91. The <strong>response quality
+        score</strong> asks LLM judges how well the response still answers the user and how much information it keeps
+        compared with an ad-free response, averaged over three judges to reduce bias. Preference pairs for each level
+        are then selected by these scores (see Method).
+      </p>
+    </div>
+
+    <div class="pipeline-card" style="max-width: 640px; margin-left: auto; margin-right: auto;">
+      <img src="./static/images/data_dist.png" alt="Advertisement score distributions of candidate responses for five prompt intensities">
+    </div>
+    <p class="figure-caption">
+      Advertisement scores of the candidates generated with the five natural-language intensity prompts
+      <strong>overlap heavily</strong>. Prompting alone does not produce distinct intensities, which is why AdKnob
+      selects preference pairs by score and learns dedicated control tokens.
+    </p>
+  </div>
+</section>
+
+<section class="section" id="results" style="background: #fbfcfd;">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Results</h2>
     <p class="results-intro">
@@ -1016,7 +1095,7 @@
       Advertisement score (x) against response quality (y). Up and to the right is better.
     </p>
     <img class="fig-legend" src="./static/images/ad_resp_legend.png" alt="Legend: Two-step, Prompt-based, JU-NLP, NL-prompt, Ours">
-    <div class="fig-grid">
+    <div class="fig-grid fig-grid-2x2">
       <div class="fig-item">
         <img src="./static/images/ad_resp_qwen.png" alt="Ad intensity results on Qwen3-4B">
       </div>
@@ -1128,7 +1207,7 @@
   </div>
 </section>
 
-<section class="section" id="bibtex" style="background: #fbfcfd;">
+<section class="section" id="bibtex">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">BibTeX</h2>
 
@@ -1252,8 +1331,9 @@
 
       document.getElementById('demo-advertiser').innerHTML =
         `Advertise <strong>${escapeHtml(ad.brand)}</strong>, highlighting: <em>${escapeHtml(ad.ad_copy)}</em>`;
-      document.getElementById('demo-user').innerHTML =
-        `${escapeHtml(prompt.text)}<span class="control-token" style="background:${LEVEL_COLOR[state.level]}">[AD_LV_${state.level}]</span>`;
+      document.getElementById('demo-user').textContent = prompt.text;
+      document.getElementById('demo-provider').innerHTML =
+        `Appends the ad control token <span class="control-token" style="background:${LEVEL_COLOR[state.level]}">[AD_LV_${state.level}]</span> to the user request`;
 
       levelBtns.forEach(b => {
         const on = Number(b.dataset.level) === state.level;
