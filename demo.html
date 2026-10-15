@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AdKnob Demo</title>
+  <meta name="description" content="Interactive demo of AdKnob (NeurIPS 2026): ad intensity control and real-time ad labeling for LLM-native advertising.">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/demo.css?v=e5d0165c9e">
+  <style>
+    /* Full-window, landscape layout for presenting and recording the demo. */
+    html {
+      font-size: clamp(13px, 0.95vw, 20px);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f3f6fa;
+      color: #1f2937;
+      font-family: 'Noto Sans', Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    .present-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      padding: 1.3rem 2.2rem 0.9rem;
+    }
+
+    .present-title {
+      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+      font-size: 1.55rem;
+      color: #111827;
+      line-height: 1.2;
+    }
+
+    .present-sub {
+      margin-top: 0.25rem;
+      font-size: 0.92rem;
+      color: #6b7280;
+    }
+
+    .present-url {
+      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+      font-size: 0.92rem;
+      color: #2563eb;
+      white-space: nowrap;
+    }
+
+    .demo-card.present-main {
+      --present-zoom: 1.5;        /* left column */
+      --present-zoom-right: 1.35; /* response column; sized so the longest response fits */
+      --left-share: 0.25fr;
+      --right-share: 0.75fr;
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, var(--left-share)) minmax(0, var(--right-share));
+      gap: 2rem;
+      margin: 0 2.2rem 1.8rem;
+      padding: 1.6rem 1.9rem;
+    }
+
+    .present-left {
+      min-height: 0;
+      overflow: hidden;
+      zoom: var(--present-zoom);  /* larger text (scripts/record_demo.py reads the computed zoom) */
+    }
+
+    /* Labels stay on; the toggle is left out of the presentation layout to save room. */
+    .present-left .toggle-row {
+      display: none;
+    }
+
+    .present-left .chat-row {
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .present-left .chat-role {
+      flex: none;
+      padding-top: 0;
+    }
+
+    .present-left .chat {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .present-left .chat-bubble.advertiser,
+    .present-left .chat-bubble.user {
+      min-height: 3.9rem;  /* two lines, so typing does not shift the layout */
+    }
+
+    .present-left .chat-bubble.provider {
+      min-height: 2.5rem;  /* height with the token chip, so it appears without a jump */
+    }
+
+    .present-left .demo-controls {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-top: 0.7rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .present-right {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      zoom: var(--present-zoom-right);
+    }
+
+    .present-right-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+
+    .present-right-head .chat-role {
+      flex: none;
+      padding: 0;
+      font-size: 0.86rem;
+    }
+
+    .present-right .chat-bubble.assistant {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      font-size: 0.88rem;  /* same as the input bubbles on the left */
+      line-height: 1.6;
+      padding: 0.7rem 0.9rem;
+    }
+
+    .present-legend {
+      margin-top: 0.55rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .present-legend .ad-tag {
+      margin-right: 0.3rem;
+    }
+
+    @media screen and (max-width: 900px) {
+      body {
+        height: auto;
+      }
+
+      .demo-card.present-main {
+        grid-template-columns: 1fr;
+        margin: 0 1rem 1rem;
+      }
+
+      .present-right .chat-bubble.assistant {
+        min-height: 20rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="present-header">
+  <div>
+    <div class="present-title"><strong>AdKnob</strong>: Ad Intensity Control and Labeling for LLM-Native Advertising</div>
+    <div class="present-sub">NeurIPS 2026 &middot; Interactive demo with outputs of AdKnob (Qwen3-4B)</div>
+  </div>
+  <div class="present-url">wkim97.github.io/AdKnob</div>
+</header>
+
+<main class="demo-card present-main" id="demo-card" data-mode="present">
+  <section class="present-left">
+    <div class="chat">
+      <div class="chat-row">
+        <div class="chat-role">Advertiser</div>
+        <div class="chat-bubble advertiser" id="demo-advertiser"></div>
+      </div>
+      <div class="chat-row">
+        <div class="chat-role">User</div>
+        <div class="chat-bubble user" id="demo-user"></div>
+      </div>
+      <div class="chat-row">
+        <div class="chat-role">Service provider</div>
+        <div class="chat-bubble provider" id="demo-provider"></div>
+      </div>
+    </div>
+
+    <div class="demo-controls">
+      <!-- The request and ad come from the URL (?prompt=&ad=); the selects stay hidden. -->
+      <div hidden>
+        <select id="demo-prompt" aria-hidden="true"></select>
+        <select id="demo-ad" aria-hidden="true"></select>
+      </div>
+      <div class="demo-field">
+        <label for="demo-level">Ad intensity knob</label>
+        <div class="knob">
+          <input type="range" id="demo-level" min="1" max="4" step="1" value="2" aria-valuetext="Level 2">
+          <div class="knob-ticks" id="demo-level-ticks">
+            <button type="button" data-level="1" style="--i: 0;" tabindex="-1">Level 1<small>Weak ad</small></button>
+            <button type="button" data-level="2" style="--i: 1;" tabindex="-1">Level 2</button>
+            <button type="button" data-level="3" style="--i: 2;" tabindex="-1">Level 3</button>
+            <button type="button" data-level="4" style="--i: 3;" tabindex="-1">Level 4<small>Strong ad</small></button>
+          </div>
+        </div>
+      </div>
+      <div class="demo-field">
+        <label for="demo-threshold">Ad labeling threshold <span style="text-transform: none;">&tau;</span></label>
+        <div class="threshold-row">
+          <input type="range" id="demo-threshold" min="0" max="1000" step="1">
+          <span class="threshold-value" id="demo-threshold-value"></span>
+          <button type="button" class="threshold-reset" id="demo-threshold-reset" title="Reset to the default threshold">reset</button>
+        </div>
+        <div class="toggle-row">
+          <input type="checkbox" id="demo-show-labels" checked>
+          <label for="demo-show-labels" style="margin: 0; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 0.84rem; color: #374151; font-family: inherit;">Show ad labels</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="present-right" aria-live="polite">
+    <div class="present-right-head">
+      <div class="chat-role">AdKnob response</div>
+      <div class="demo-meta" style="margin: 0;">
+        <span><span id="demo-count"></span> <button type="button" class="demo-skip" id="demo-skip" hidden>Skip &#9656;</button></span>
+      </div>
+    </div>
+    <div class="chat-bubble assistant" id="demo-response"></div>
+    <div class="present-legend">
+      <span class="ad-tag">AD</span>Sentences whose attention-rollout attribution to the brand and ad copy exceeds &tau;
+    </div>
+  </section>
+</main>
+
+<script src="./static/data/demo_data.js?v=05e1af207b"></script>
+<script src="./static/js/demo.js?v=2b3efafff3"></script>
+
+</body>
+</html>

@@ -56,15 +56,20 @@ with open(dst, "w") as f:
     json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     f.write(";\n")
 
-# Bump the cache-busting version in index.html so browsers never pair new code with stale data.
+# Bump cache-busting versions (content hashes) so browsers never pair new code with stale
+# data or styles; run again after editing demo.js / demo.css.
 import hashlib
 import re
-version = hashlib.md5(open(dst, "rb").read()).hexdigest()[:10]
-index = os.path.join(os.path.dirname(__file__), "..", "index.html")
-html = open(index).read()
-html, n_sub = re.subn(r"demo_data\.js\?v=[0-9a-z]+", f"demo_data.js?v={version}", html)
-assert n_sub == 1
-open(index, "w").write(html)
+root = os.path.join(os.path.dirname(__file__), "..")
+assets = ["static/data/demo_data.js", "static/js/demo.js", "static/css/demo.css"]
+versions = {a: hashlib.md5(open(os.path.join(root, a), "rb").read()).hexdigest()[:10] for a in assets}
+for page in ("index.html", "demo.html"):
+    path = os.path.join(root, page)
+    html = open(path).read()
+    for asset, v in versions.items():
+        html, n_sub = re.subn(re.escape(asset) + r"\?v=[0-9a-z]+", f"{asset}?v={v}", html)
+        assert n_sub == 1, (page, asset)
+    open(path, "w").write(html)
 
 n = sum(len(v) for v in results.values())
 print(f"{len(results)} combinations, {n} responses, {len(scores)} sentences; "
