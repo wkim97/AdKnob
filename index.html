@@ -562,6 +562,73 @@
       line-height: 1.5;
     }
 
+    .chat-bubble.assistant {
+      min-height: 7rem;
+    }
+
+    .generating {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .generating .dots span {
+      animation: dot-blink 1.2s infinite;
+    }
+
+    .generating .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .generating .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dot-blink {
+      0%, 80%, 100% { opacity: 0.15; }
+      40% { opacity: 1; }
+    }
+
+    .caret {
+      display: inline-block;
+      width: 0.5em;
+      height: 1.05em;
+      margin-left: 1px;
+      vertical-align: -0.18em;
+      background: #374151;
+      animation: caret-blink 1s steps(1) infinite;
+    }
+
+    @keyframes caret-blink {
+      50% { opacity: 0; }
+    }
+
+    .ad-sent.fresh {
+      animation: ad-fade 0.7s ease-out;
+    }
+
+    .ad-sent.fresh .ad-tag {
+      animation: tag-pop 0.45s ease-out;
+    }
+
+    @keyframes ad-fade {
+      from { background-color: transparent; }
+      to { background-color: #d9f2d9; }
+    }
+
+    @keyframes tag-pop {
+      from { opacity: 0; transform: scale(0.6); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .demo-skip {
+      font-size: 0.76rem;
+      color: #2563eb;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 0.3rem;
+    }
+
+    .demo-skip[hidden] {
+      display: none;
+    }
+
     .demo-meta {
       display: flex;
       justify-content: space-between;
@@ -895,7 +962,7 @@
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Interactive Demo</h2>
     <p class="results-intro">
-      Pair any user request with any advertisement, turn the knob, and see how AdKnob (Qwen3-4B) changes the response.
+      Pick a user request and one of ten brands from the same topic, turn the knob, and see how AdKnob (Qwen3-4B) changes the response.
       Highlighted sentences are the ones AdKnob labels as advertising. Move the threshold to see how labeling changes.
     </p>
 
@@ -950,7 +1017,7 @@
           <div style="flex: 1 1 auto; min-width: 0;">
             <div class="chat-bubble assistant" id="demo-response"></div>
             <div class="demo-meta">
-              <span id="demo-count"></span>
+              <span><span id="demo-count"></span> <button type="button" class="demo-skip" id="demo-skip" hidden>Skip &#9656;</button></span>
               <span>Hover a sentence to see its attribution score.</span>
             </div>
           </div>
@@ -1305,12 +1372,9 @@
       o.textContent = `[${TOPIC[p.meta_topic] || p.meta_topic}] ${p.text}`;
       promptSel.appendChild(o);
     });
-    data.ads.forEach(a => {
-      const o = document.createElement('option');
-      o.value = a.id;
-      o.textContent = `${a.brand} · ${a.ad_copy}`;
-      adSel.appendChild(o);
-    });
+    const adById = {};
+    data.ads.forEach(a => { adById[a.id] = a; });
+    const adsFor = p => (data.ads_by_prompt[String(p)] || []).map(id => adById[id]);
 
     function escapeHtml(s) {
       return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1323,61 +1387,161 @@
         .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
     }
 
-    function render() {
-      const prompt = data.prompts.find(p => p.id === state.prompt);
-      const ad = data.ads.find(a => a.id === state.ad);
-      const combo = data.results[`${state.prompt}_${state.ad}`];
-      const res = combo && combo[String(state.level)];
+    const responseEl = document.getElementById('demo-response');
+    const countEl = document.getElementById('demo-count');
+    const skipBtn = document.getElementById('demo-skip');
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const CHARS_PER_SEC = 220;
+    let anim = null;
 
+    const currentRes = () => {
+      const combo = data.results[`${state.prompt}_${state.ad}`];
+      return combo && combo[String(state.level)];
+    };
+
+    function renderHeader() {
+      const prompt = data.prompts.find(p => p.id === state.prompt);
+      const ad = adById[state.ad];
       document.getElementById('demo-advertiser').innerHTML =
         `Advertise <strong>${escapeHtml(ad.brand)}</strong>, highlighting: <em>${escapeHtml(ad.ad_copy)}</em>`;
       document.getElementById('demo-user').textContent = prompt.text;
       document.getElementById('demo-provider').innerHTML =
         `Appends the ad control token <span class="control-token" style="background:${LEVEL_COLOR[state.level]}">[AD_LV_${state.level}]</span> to the user request`;
-
       levelBtns.forEach(b => {
         const on = Number(b.dataset.level) === state.level;
         b.classList.toggle('active', on);
         b.setAttribute('aria-checked', on ? 'true' : 'false');
       });
       tauValue.textContent = state.tau.toPrecision(2);
+    }
 
+    // Split a response into plain gaps and scored sentences that together cover the text.
+    function segmentsOf(res) {
+      const spans = res.spans.slice().sort((x, y) => x.start - y.start);
+      const segs = [];
+      let c = 0;
+      spans.forEach(sp => {
+        if (sp.start < c) return;
+        if (sp.start > c) segs.push({ start: c, end: sp.start });
+        segs.push({ start: sp.start, end: sp.end, score: sp.score });
+        c = sp.end;
+      });
+      if (c < res.response.length) segs.push({ start: c, end: res.response.length });
+      return segs;
+    }
+
+    function segmentHtml(text, seg, fresh) {
+      const body = renderText(text.slice(seg.start, seg.end));
+      if (seg.score === undefined) return body;
+      const title = `attribution score ${seg.score.toFixed(4)}`;
+      if (seg.score > state.tau && showLabels.checked) {
+        return `<span class="ad-sent${fresh ? ' fresh' : ''}" title="${title}"><span class="ad-tag">AD</span>${body}</span>`;
+      }
+      return `<span title="${title}">${body}</span>`;
+    }
+
+    function showCount(res) {
+      const n = res.spans.filter(sp => sp.score > state.tau).length;
+      countEl.textContent = `${n} of ${res.spans.length} sentences labeled as ad at τ = ${state.tau.toPrecision(2)}`;
+    }
+
+    function stopAnim() {
+      if (anim) {
+        clearTimeout(anim.timer);
+        anim = null;
+      }
+      skipBtn.hidden = true;
+    }
+
+    // Full response at once (threshold / label changes, skip, reduced motion).
+    function renderStatic() {
+      stopAnim();
+      renderHeader();
+      const res = currentRes();
       if (!res) {
-        document.getElementById('demo-response').textContent = 'This combination is not available.';
-        document.getElementById('demo-count').textContent = '';
+        responseEl.textContent = 'This combination is not available.';
+        countEl.textContent = '';
         return;
       }
+      responseEl.innerHTML = segmentsOf(res).map(seg => segmentHtml(res.response, seg, false)).join('');
+      showCount(res);
+    }
 
+    // Stream the response like a chat model, labeling each sentence as it completes.
+    function generate() {
+      stopAnim();
+      renderHeader();
+      const res = currentRes();
+      if (!res || reduceMotion) {
+        renderStatic();
+        return;
+      }
       const text = res.response;
-      const spans = res.spans.slice().sort((x, y) => x.start - y.start);
-      let html = '';
-      let cursor = 0;
-      let nAd = 0;
-      spans.forEach(sp => {
-        if (sp.start < cursor) return;
-        html += renderText(text.slice(cursor, sp.start));
-        const sentence = renderText(text.slice(sp.start, sp.end));
-        const isAd = sp.score > state.tau;
-        const title = `attribution score ${sp.score.toFixed(4)}`;
-        if (isAd) nAd += 1;
-        if (isAd && showLabels.checked) {
-          html += `<span class="ad-sent" title="${title}"><span class="ad-tag">AD</span>${sentence}</span>`;
-        } else {
-          html += `<span title="${title}">${sentence}</span>`;
+      const segs = segmentsOf(res);
+      const a = anim = { timer: null };
+      responseEl.innerHTML =
+        '<span class="generating">Generating<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>';
+      countEl.textContent = '';
+      skipBtn.hidden = false;
+
+      a.timer = setTimeout(() => {
+        responseEl.innerHTML = '';
+        const caret = document.createElement('span');
+        caret.className = 'caret';
+        responseEl.appendChild(caret);
+        let segIdx = 0;
+        let node = null;
+        let t0 = null;
+
+        function frame() {
+          if (anim !== a) return;
+          const ts = performance.now();
+          if (t0 === null) t0 = ts;
+          const target = Math.min(text.length, Math.floor(((ts - t0) / 1000) * CHARS_PER_SEC));
+          while (segIdx < segs.length) {
+            const seg = segs[segIdx];
+            if (!node) {
+              node = document.createElement('span');
+              responseEl.insertBefore(node, caret);
+            }
+            if (target >= seg.end) {
+              const tmp = document.createElement('template');
+              tmp.innerHTML = segmentHtml(text, seg, true);
+              node.replaceWith(tmp.content);
+              node = null;
+              segIdx += 1;
+            } else {
+              // Partial sentence: plain text, markdown marks hidden until the sentence completes.
+              node.textContent = text.slice(seg.start, Math.max(seg.start, target))
+                .replace(/\*\*/g, '').replace(/(^|\n)#{1,6}\s*/g, '$1');
+              break;
+            }
+          }
+          if (segIdx >= segs.length) {
+            caret.remove();
+            skipBtn.hidden = true;
+            anim = null;
+            showCount(res);
+            return;
+          }
+          a.timer = setTimeout(frame, 30);
         }
-        cursor = sp.end;
-      });
-      html += renderText(text.slice(cursor));
-      document.getElementById('demo-response').innerHTML = html;
-      document.getElementById('demo-count').textContent =
-        `${nAd} of ${spans.length} sentences labeled as ad at τ = ${state.tau.toPrecision(2)}`;
+        frame();
+      }, 900 + Math.random() * 600);
     }
 
     const hasCombo = (p, a) => Boolean(data.results[`${p}_${a}`]);
 
-    // Only offer ads that have outputs for the selected request.
+    // Offer the brands from the selected request's topic; keep any without outputs disabled.
     function syncAdOptions() {
-      Array.from(adSel.options).forEach(o => { o.disabled = !hasCombo(state.prompt, Number(o.value)); });
+      adSel.innerHTML = '';
+      adsFor(state.prompt).forEach(a => {
+        const o = document.createElement('option');
+        o.value = a.id;
+        o.textContent = `${a.brand} · ${a.ad_copy}`;
+        o.disabled = !hasCombo(state.prompt, a.id);
+        adSel.appendChild(o);
+      });
       if (!hasCombo(state.prompt, state.ad)) {
         const first = Array.from(adSel.options).find(o => !o.disabled);
         if (first) state.ad = Number(first.value);
@@ -1385,30 +1549,43 @@
       adSel.value = state.ad;
     }
 
-    promptSel.addEventListener('change', () => { state.prompt = Number(promptSel.value); syncAdOptions(); render(); });
-    adSel.addEventListener('change', () => { state.ad = Number(adSel.value); render(); });
-    levelBtns.forEach(b => b.addEventListener('click', () => { state.level = Number(b.dataset.level); render(); }));
-    tauInput.addEventListener('input', () => { state.tau = fromSlider(Number(tauInput.value)); render(); });
+    promptSel.addEventListener('change', () => { state.prompt = Number(promptSel.value); syncAdOptions(); generate(); });
+    adSel.addEventListener('change', () => { state.ad = Number(adSel.value); generate(); });
+    levelBtns.forEach(b => b.addEventListener('click', () => { state.level = Number(b.dataset.level); generate(); }));
+    tauInput.addEventListener('input', () => { state.tau = fromSlider(Number(tauInput.value)); renderStatic(); });
     document.getElementById('demo-threshold-reset').addEventListener('click', () => {
       state.tau = TAU_DEFAULT;
       tauInput.value = toSlider(TAU_DEFAULT);
-      render();
+      renderStatic();
     });
-    showLabels.addEventListener('change', render);
+    showLabels.addEventListener('change', renderStatic);
+    skipBtn.addEventListener('click', renderStatic);
 
     document.getElementById('demo-tau-default').textContent = TAU_DEFAULT.toPrecision(2);
 
     // Start on a request that has outputs, and disable requests that have none.
     Array.from(promptSel.options).forEach(o => {
-      o.disabled = !data.ads.some(a => hasCombo(Number(o.value), a.id));
+      o.disabled = !adsFor(Number(o.value)).some(a => hasCombo(Number(o.value), a.id));
     });
-    const firstPrompt = data.prompts.find(p => data.ads.some(a => hasCombo(p.id, a.id)));
+    const firstPrompt = data.prompts.find(p => adsFor(p.id).some(a => hasCombo(p.id, a.id)));
     if (firstPrompt) state.prompt = firstPrompt.id;
     promptSel.value = state.prompt;
     syncAdOptions();
-
     tauInput.value = toSlider(TAU_DEFAULT);
-    render();
+    renderHeader();
+
+    // Generate the first response once the demo scrolls into view.
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(entries => {
+        if (entries.some(e => e.isIntersecting)) {
+          io.disconnect();
+          generate();
+        }
+      }, { threshold: 0.25 });
+      io.observe(card);
+    } else {
+      generate();
+    }
   })();
 </script>
 
