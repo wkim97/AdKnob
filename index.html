@@ -1300,7 +1300,7 @@
   </div>
 </div>
 
-<script src="./static/data/demo_data.js?v=5c29a3fcd0"></script>
+<script src="./static/data/demo_data.js?v=05e1af207b"></script>
 <script>
   (function () {
     const modal = document.getElementById('image-modal');
@@ -1571,6 +1571,8 @@
     });
     const firstPrompt = data.prompts.find(p => adsFor(p.id).some(a => hasCombo(p.id, a.id)));
     if (firstPrompt) state.prompt = firstPrompt.id;
+    const firstAd = adsFor(state.prompt).find(a => hasCombo(state.prompt, a.id));
+    if (firstAd) state.ad = firstAd.id;
     promptSel.value = state.prompt;
     syncAdOptions();
     tauInput.value = toSlider(TAU_DEFAULT);
