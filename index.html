@@ -1300,7 +1300,7 @@
   </div>
 </div>
 
-<script src="./static/data/demo_data.js?v=a8a5270a70"></script>
+<script src="./static/data/demo_data.js?v=5c29a3fcd0"></script>
 <script>
   (function () {
     const modal = document.getElementById('image-modal');
@@ -1474,7 +1474,7 @@
       stopAnim();
       renderHeader();
       const res = currentRes();
-      if (!res || reduceMotion) {
+      if (!res || reduceMotion || document.hidden) {
         renderStatic();
         return;
       }
@@ -1560,6 +1560,8 @@
     });
     showLabels.addEventListener('change', renderStatic);
     skipBtn.addEventListener('click', renderStatic);
+    // Background tabs throttle timers and pause animations; finish at once instead.
+    document.addEventListener('visibilitychange', () => { if (document.hidden && anim) renderStatic(); });
 
     document.getElementById('demo-tau-default').textContent = TAU_DEFAULT.toPrecision(2);
 
