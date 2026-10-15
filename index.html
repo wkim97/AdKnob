@@ -1300,7 +1300,7 @@
   </div>
 </div>
 
-<script src="./static/data/demo_data.js"></script>
+<script src="./static/data/demo_data.js?v=a8a5270a70"></script>
 <script>
   (function () {
     const modal = document.getElementById('image-modal');
@@ -1374,7 +1374,9 @@
     });
     const adById = {};
     data.ads.forEach(a => { adById[a.id] = a; });
-    const adsFor = p => (data.ads_by_prompt[String(p)] || []).map(id => adById[id]);
+    const adsFor = p => (data.ads_by_prompt
+      ? (data.ads_by_prompt[String(p)] || []).map(id => adById[id]).filter(Boolean)
+      : data.ads);
 
     function escapeHtml(s) {
       return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1532,19 +1534,17 @@
 
     const hasCombo = (p, a) => Boolean(data.results[`${p}_${a}`]);
 
-    // Offer the brands from the selected request's topic; keep any without outputs disabled.
+    // Offer the brands from the selected request's topic that have outputs.
     function syncAdOptions() {
       adSel.innerHTML = '';
-      adsFor(state.prompt).forEach(a => {
+      adsFor(state.prompt).filter(a => hasCombo(state.prompt, a.id)).forEach(a => {
         const o = document.createElement('option');
         o.value = a.id;
         o.textContent = `${a.brand} · ${a.ad_copy}`;
-        o.disabled = !hasCombo(state.prompt, a.id);
         adSel.appendChild(o);
       });
-      if (!hasCombo(state.prompt, state.ad)) {
-        const first = Array.from(adSel.options).find(o => !o.disabled);
-        if (first) state.ad = Number(first.value);
+      if (!hasCombo(state.prompt, state.ad) && adSel.options.length) {
+        state.ad = Number(adSel.options[0].value);
       }
       adSel.value = state.ad;
     }
@@ -1563,9 +1563,9 @@
 
     document.getElementById('demo-tau-default').textContent = TAU_DEFAULT.toPrecision(2);
 
-    // Start on a request that has outputs, and disable requests that have none.
+    // Only list requests that have outputs, and start on the first of them.
     Array.from(promptSel.options).forEach(o => {
-      o.disabled = !adsFor(Number(o.value)).some(a => hasCombo(Number(o.value), a.id));
+      if (!adsFor(Number(o.value)).some(a => hasCombo(Number(o.value), a.id))) o.remove();
     });
     const firstPrompt = data.prompts.find(p => adsFor(p.id).some(a => hasCombo(p.id, a.id)));
     if (firstPrompt) state.prompt = firstPrompt.id;
