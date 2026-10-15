@@ -370,6 +370,12 @@
       text-align: left;
     }
 
+    .content table.result-table.compact th,
+    .content table.result-table.compact td {
+      padding: 0.38rem 0.3rem;
+      font-size: 0.78rem;
+    }
+
     .result-table tr.ours td {
       background: #eef6ff;
       font-weight: 700;
@@ -653,20 +659,13 @@
 <section class="section" id="motivation">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Unaddressed Questions in LLM-Native Advertising</h2>
-    <p class="results-intro">
-      LLM services such as OpenAI, Perplexity and xAI are moving toward advertising inside generated answers. Unlike
-      banners or sponsored links, these <em>LLM-native ads</em> are woven into free-form responses, which makes them
-      less disruptive but raises two problems that existing methods leave open.
-    </p>
 
     <div class="component-card">
       <h3>&#9312; How strong should the ad be?</h3>
       <p>
-        Existing approaches only inject an ad; they cannot set how prominently it appears. A provider needs that
-        control to offer subscription tiers, honor advertiser contracts, and govern context, for example suppressing
-        ads for an urgent medical question while giving them more room in a shopping query. Prompting a model with
-        "subtle" or "strong" does not work reliably: intensities collapse into a narrow range, even for GPT-4o and
-        Claude.
+        A provider needs control over how prominently an ad appears to offer subscription tiers, honor advertiser
+        contracts, and govern context, for example suppressing ads for an urgent medical question while giving them
+        more room in a shopping query.
       </p>
     </div>
 
@@ -714,7 +713,7 @@
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Interactive Demo</h2>
     <p class="results-intro">
-      Pick a user request and one of ten brands from the same topic, turn the knob, and see how AdKnob (Qwen3-4B) changes the response.
+      Pick a user request and a brand to advertise, turn the knob, and see how AdKnob (Qwen3-4B) changes the response.
       Highlighted sentences are the ones AdKnob labels as advertising. Move the threshold to see how labeling changes.
     </p>
 
@@ -780,12 +779,6 @@
       </div>
     </div>
 
-    <p class="demo-note">
-      All responses were generated in advance by the model from the paper (Qwen3-4B, greedy decoding, up to 500
-      tokens); nothing runs in your browser. A sentence is labeled as an ad when its attention-rollout attribution to
-      the brand and ad copy tokens exceeds &tau;. The demo starts at &tau; = <span id="demo-tau-default"></span>; the
-      paper's quantitative evaluation uses &tau; = 0.005, which favors recall.
-    </p>
   </div>
 </section>
 
@@ -850,7 +843,6 @@
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">MI-KnobSet</h2>
     <p class="results-intro">
-      Training AdKnob needs preference pairs across multiple ad intensity levels, and no such dataset existed.
       MI-KnobSet is the first multi-level ad intensity preference dataset for LLM-native ads, built on the Webis
       Generated Native Ads 2024 dataset and extended to a conversational setting.
     </p>
@@ -875,27 +867,37 @@
     </div>
 
     <div class="component-card">
-      <h3>Construction</h3>
+      <h3>What it offers</h3>
       <p>
-        The Webis dataset pairs short keyword queries with brands and ad-integrated responses. GPT-4o turns each
-        keyword query into a natural user request and writes an ad copy describing the brand's key qualities, giving
-        instances of (user request, brand, ad copy). For each training instance, GPT-4o then generates 25 candidate
-        responses, five from each of five system prompts with increasing ad integration, from "subtle" to
-        "maximum".
+        Every instance pairs a user request with a brand and its ad copy, and comes with candidate responses that range
+        from barely mentioning the brand to building the whole answer around it. Each response is scored for both
+        <strong>ad intensity</strong> and <strong>response quality</strong>, and for each of the four ad levels the
+        preference pairs mark the right response against ones that miss the intensity, the quality, or both. This
+        makes it possible to train and evaluate <em>how strongly</em> a model advertises, not just <em>whether</em> it
+        does. The ad intensity score agrees with human judgments at Spearman &rho; = 0.91.
       </p>
     </div>
 
-    <div class="component-card">
-      <h3>Scoring</h3>
-      <p>
-        Every candidate gets two scores. The <strong>advertisement score</strong> combines how often the brand is
-        mentioned (weighted by the sentiment of those mentions) with how closely the response conveys the ad copy, and
-        correlates with human-perceived ad intensity at Spearman &rho; = 0.91. The <strong>response quality
-        score</strong> asks LLM judges how well the response still answers the user and how much information it keeps
-        compared with an ad-free response, averaged over three judges to reduce bias. Preference pairs for each level
-        are then selected by these scores (see Method).
-      </p>
+    <h3 class="result-category-title">Statistics</h3>
+    <p class="result-category-desc">
+      Average lengths: user request 14 &plusmn; 4 tokens, brand 3 &plusmn; 1, ad copy 10 &plusmn; 2, candidate response
+      236 &plusmn; 44.
+    </p>
+    <div class="result-table-wrap">
+      <table class="result-table compact">
+        <thead>
+          <tr>
+            <th>Split</th><th>Banking</th><th>Cars</th><th>Gaming</th><th>Health&shy;care</th><th>Real estate</th>
+            <th>Restau&shy;rants</th><th>Shopping</th><th>Streaming</th><th>Travel</th><th>Fitness</th><th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Train</td><td>390</td><td>455</td><td>522</td><td>323</td><td>352</td><td>392</td><td>409</td><td>485</td><td>355</td><td>263</td><td><strong>3,946</strong></td></tr>
+          <tr><td>Test</td><td>72</td><td>105</td><td>105</td><td>63</td><td>58</td><td>86</td><td>36</td><td>100</td><td>232</td><td>56</td><td><strong>913</strong></td></tr>
+        </tbody>
+      </table>
     </div>
+    <p class="figure-caption">Instances per meta topic.</p>
 
     <div class="pipeline-card" style="max-width: 640px; margin-left: auto; margin-right: auto;">
       <img src="./static/images/data_dist.png" alt="Advertisement score distributions of candidate responses for five prompt intensities">
