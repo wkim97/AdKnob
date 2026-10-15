@@ -411,38 +411,107 @@
       color: #111827;
     }
 
-    .level-knob {
-      display: flex;
-      gap: 0.4rem;
+    /* Ad intensity knob: slider modeled on the control in the method overview figure */
+    .knob {
+      --thumb: 22px;
+      position: relative;
+      padding-top: 0.15rem;
     }
 
-    .level-knob button {
-      flex: 1 1 0;
-      font-family: 'Menlo', 'Consolas', monospace;
-      font-size: 0.8rem;
-      padding: 0.45rem 0.2rem;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      background: #fff;
-      color: #374151;
+    .knob input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: var(--thumb);
+      margin: 0;
+      background: transparent;
       cursor: pointer;
-      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
 
-    .level-knob button:hover {
-      border-color: #9ca3af;
+    .knob input[type="range"]:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 3px;
+      border-radius: 6px;
     }
 
-    .level-knob button.active {
-      color: #fff;
-      border-color: transparent;
+    .knob input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #cfe1f4, #2f6db5 70%, #1d4a8f);
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.2);
+    }
+
+    .knob input[type="range"]::-moz-range-track {
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #cfe1f4, #2f6db5 70%, #1d4a8f);
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.2);
+    }
+
+    .knob input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: var(--thumb);
+      height: var(--thumb);
+      margin-top: calc((8px - var(--thumb)) / 2);
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background: radial-gradient(circle at 35% 30%, #8fbcec, #2f6db5 55%, #1d4a8f);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.45);
+    }
+
+    .knob input[type="range"]::-moz-range-thumb {
+      width: var(--thumb);
+      height: var(--thumb);
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background: radial-gradient(circle at 35% 30%, #8fbcec, #2f6db5 55%, #1d4a8f);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.45);
+    }
+
+    .knob-ticks {
+      position: relative;
+      height: 2.1rem;
+      margin-top: 0.2rem;
+    }
+
+    .knob-ticks button {
+      position: absolute;
+      top: 0;
+      left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--i) / 3);
+      transform: translateX(-50%);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.2;
+      white-space: nowrap;
+      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+
+    .knob-ticks button:first-child {
+      transform: translateX(-11px);
+      text-align: left;
+    }
+
+    .knob-ticks button:last-child {
+      transform: translateX(calc(-100% + 11px));
+      text-align: right;
+    }
+
+    .knob-ticks button.active {
+      color: #1d4a8f;
       font-weight: 700;
     }
 
-    .level-knob button[data-level="1"].active { background: #3fa66b; }
-    .level-knob button[data-level="2"].active { background: #c9a227; }
-    .level-knob button[data-level="3"].active { background: #e07b39; }
-    .level-knob button[data-level="4"].active { background: #d64545; }
+    .knob-ticks small {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: #9ca3af;
+    }
 
     .threshold-row {
       display: flex;
@@ -536,7 +605,6 @@
       padding: 0 0.35rem;
       border-radius: 5px;
       color: #fff;
-      margin-left: 0.25rem;
       vertical-align: 1px;
     }
 
@@ -977,12 +1045,15 @@
           <select id="demo-ad"></select>
         </div>
         <div class="demo-field">
-          <span class="demo-label">Ad intensity knob</span>
-          <div class="level-knob" id="demo-levels" role="radiogroup" aria-label="Ad intensity level">
-            <button type="button" data-level="1" role="radio">AD_LV_1</button>
-            <button type="button" data-level="2" role="radio">AD_LV_2</button>
-            <button type="button" data-level="3" role="radio">AD_LV_3</button>
-            <button type="button" data-level="4" role="radio">AD_LV_4</button>
+          <label for="demo-level">Ad intensity knob</label>
+          <div class="knob">
+            <input type="range" id="demo-level" min="1" max="4" step="1" value="2" aria-valuetext="Level 2">
+            <div class="knob-ticks" id="demo-level-ticks">
+              <button type="button" data-level="1" style="--i: 0;" tabindex="-1">Level 1<small>Weak ad</small></button>
+              <button type="button" data-level="2" style="--i: 1;" tabindex="-1">Level 2</button>
+              <button type="button" data-level="3" style="--i: 2;" tabindex="-1">Level 3</button>
+              <button type="button" data-level="4" style="--i: 3;" tabindex="-1">Level 4<small>Strong ad</small></button>
+            </div>
           </div>
         </div>
         <div class="demo-field">
@@ -1348,14 +1419,20 @@
       workout: 'Fitness', real_estate: 'Real estate', restaurant: 'Restaurants', streaming: 'Streaming',
       vacation: 'Travel'
     };
-    const LEVEL_COLOR = { 1: '#3fa66b', 2: '#c9a227', 3: '#e07b39', 4: '#d64545' };
+    const LEVEL_COLOR = { 1: '#7aa7d9', 2: '#4f86c6', 3: '#2f6db5', 4: '#1d4a8f' };
     const TAU_DEFAULT = data.tau_default || 0.005;
     const TAU_MIN = data.tau_range ? data.tau_range[0] : 0.0005;
     const TAU_MAX = data.tau_range ? data.tau_range[1] : 0.05;
 
     const promptSel = document.getElementById('demo-prompt');
     const adSel = document.getElementById('demo-ad');
-    const levelBtns = document.querySelectorAll('#demo-levels button');
+    const levelInput = document.getElementById('demo-level');
+    const levelTicks = document.querySelectorAll('#demo-level-ticks button');
+    function showLevel(level) {
+      levelInput.value = level;
+      levelInput.setAttribute('aria-valuetext', `Level ${level}`);
+      levelTicks.forEach(t => t.classList.toggle('active', Number(t.dataset.level) === level));
+    }
     const tauInput = document.getElementById('demo-threshold');
     const tauValue = document.getElementById('demo-threshold-value');
     const showLabels = document.getElementById('demo-show-labels');
@@ -1408,12 +1485,8 @@
         `Advertise <strong>${escapeHtml(ad.brand)}</strong>, highlighting: <em>${escapeHtml(ad.ad_copy)}</em>`;
       document.getElementById('demo-user').textContent = prompt.text;
       document.getElementById('demo-provider').innerHTML =
-        `Appends the ad control token <span class="control-token" style="background:${LEVEL_COLOR[state.level]}">[AD_LV_${state.level}]</span> to the user request`;
-      levelBtns.forEach(b => {
-        const on = Number(b.dataset.level) === state.level;
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-checked', on ? 'true' : 'false');
-      });
+        `<span class="control-token" style="background:${LEVEL_COLOR[state.level]}">[AD_LV_${state.level}]</span>`;
+      showLevel(state.level);
       tauValue.textContent = state.tau.toPrecision(2);
     }
 
@@ -1551,7 +1624,16 @@
 
     promptSel.addEventListener('change', () => { state.prompt = Number(promptSel.value); syncAdOptions(); generate(); });
     adSel.addEventListener('change', () => { state.ad = Number(adSel.value); generate(); });
-    levelBtns.forEach(b => b.addEventListener('click', () => { state.level = Number(b.dataset.level); generate(); }));
+    // Dragging only moves the knob; releasing it (or a keyboard step) generates.
+    levelInput.addEventListener('input', () => showLevel(Number(levelInput.value)));
+    levelInput.addEventListener('change', () => {
+      const level = Number(levelInput.value);
+      if (level !== state.level) { state.level = level; generate(); }
+    });
+    levelTicks.forEach(t => t.addEventListener('click', () => {
+      const level = Number(t.dataset.level);
+      if (level !== state.level) { state.level = level; generate(); }
+    }));
     tauInput.addEventListener('input', () => { state.tau = fromSlider(Number(tauInput.value)); renderStatic(); });
     document.getElementById('demo-threshold-reset').addEventListener('click', () => {
       state.tau = TAU_DEFAULT;
