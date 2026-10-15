@@ -172,6 +172,20 @@
       text-align: center;
     }
 
+    .highlights-row-lg .highlight-chip {
+      padding: 0.85rem 1rem;
+    }
+
+    .highlights-row-lg .highlight-chip strong {
+      font-size: 1.04rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .highlights-row-lg .highlight-chip span {
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
     .highlights-row-4 .highlight-chip {
       flex-basis: 150px;
     }
@@ -690,7 +704,7 @@
       </p>
     </div>
 
-    <div class="highlights-row">
+    <div class="highlights-row highlights-row-lg">
       <div class="highlight-chip">
         <strong>(a) An ad intensity knob</strong>
         <span>One model, uniformly spaced ad intensity levels</span>
@@ -712,10 +726,6 @@
 <section class="section" id="demo">
   <div class="page-container content">
     <h2 class="title section-title has-text-centered">Interactive Demo</h2>
-    <p class="results-intro">
-      Pick a user request and a brand to advertise, turn the knob, and see how AdKnob (Qwen3-4B) changes the response.
-      Highlighted sentences are the ones AdKnob labels as advertising. Move the threshold to see how labeling changes.
-    </p>
 
     <div class="demo-card" id="demo-card">
       <div class="demo-controls">
@@ -800,38 +810,28 @@
     <div class="component-card">
       <h3>(i) Ad Control Tokens</h3>
       <p>
-        AdKnob adds new tokens <code>[AD_LV_1]</code>&ndash;<code>[AD_LV_4]</code> to the vocabulary and appends one
-        to the user request. Their embeddings start from random initialization, so they carry no pretrained meaning.
-        Natural-language cues such as "low" or "level 3" do carry meaning, and that meaning gets in the way: models
-        trained with them leak the descriptor words into the answer and degrade response quality. A token that means
-        nothing on its own can be bound cleanly to one intensity.
+        AdKnob appends a new token, <code>[AD_LV_1]</code>&ndash;<code>[AD_LV_4]</code>, to the user request. Unlike
+        words such as "low" or "level 3", these randomly initialized tokens carry no pretrained meaning, so each binds
+        cleanly to one ad intensity without leaking descriptor words into the answer.
       </p>
     </div>
 
     <div class="component-card">
       <h3>(ii) LLM Alignment with Ad Control Tokens</h3>
       <p>
-        Each level <em>n</em> gets a uniformly spaced target intensity, and the model is fine-tuned with DPO on
-        level-dependent preference pairs. The chosen response hits the target advertisement score while keeping
-        response quality high. Three rejected responses each isolate one failure, so the training signal is never
-        ambiguous:
+        DPO aligns each token to a uniformly spaced target intensity. The chosen response hits the target ad intensity
+        with high response quality, while three rejected responses each isolate one failure: poor quality, wrong
+        intensity, or both.
       </p>
-      <ul>
-        <li><strong>Quality failure</strong>: right intensity, poor answer to the user.</li>
-        <li><strong>Control failure</strong>: good answer, wrong ad intensity.</li>
-        <li><strong>Quality &amp; control failure</strong>: both at once.</li>
-      </ul>
     </div>
 
     <div class="component-card">
       <h3>(iii) Attribution-Guided Ad Labeling</h3>
       <p>
-        Ad sentences are the ones that depend on the brand and ad copy in the input. AdKnob measures this dependence
-        with attention rollout, which uses only the attention weights already computed during generation, so labeling
-        costs no extra forward pass. Because DPO alone does not make this signal reliable, an
-        <strong>ad-attribution loss</strong> supervises it during training with pseudo-labels from an ablation study,
-        namely how much each generated token's probability drops when the brand and ad copy are removed from the
-        prompt. At inference, a sentence is labeled as an ad when its average attribution exceeds a threshold &tau;.
+        Ad sentences are the ones that depend on the brand and ad copy. AdKnob traces this with attention rollout over
+        the attention weights already computed during generation, so labeling needs no extra pass. An
+        <strong>ad-attribution loss</strong> makes this signal reliable, and a sentence is labeled as an ad when its
+        attribution exceeds a threshold &tau;.
       </p>
     </div>
   </div>
@@ -869,12 +869,9 @@
     <div class="component-card">
       <h3>What it offers</h3>
       <p>
-        Every instance pairs a user request with a brand and its ad copy, and comes with candidate responses that range
-        from barely mentioning the brand to building the whole answer around it. Each response is scored for both
-        <strong>ad intensity</strong> and <strong>response quality</strong>, and for each of the four ad levels the
-        preference pairs mark the right response against ones that miss the intensity, the quality, or both. This
-        makes it possible to train and evaluate <em>how strongly</em> a model advertises, not just <em>whether</em> it
-        does.
+        Each instance pairs a user request with a brand and ad copy, plus candidate responses scored for ad intensity
+        and response quality. Preference pairs at four ad levels let a model be trained and evaluated on <em>how
+        strongly</em> it advertises, not just <em>whether</em> it does.
       </p>
     </div>
 
