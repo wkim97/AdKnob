@@ -6,7 +6,7 @@ Woo Jae Kim, Seongho Keum, Joonsung Jeon, Suhyeon Ha, Sooel Son<sup>&dagger;</su
 
 School of Computing, KAIST &nbsp;&nbsp; <sup>&dagger;</sup>Co-corresponding authors
 
-[Project Page](https://wkim97.github.io/AdKnob/) | [Interactive Demo](https://wkim97.github.io/AdKnob/demo.html) | Paper (coming soon)
+[Paper](https://arxiv.org/abs/2611.00822) | [Project Page](https://wkim97.github.io/AdKnob/) | [Interactive Demo](https://wkim97.github.io/AdKnob/demo.html) | Dataset (coming soon)
 
 ![AdKnob overview](https://wkim97.github.io/AdKnob/static/images/teaser.png)
 
@@ -19,9 +19,9 @@ AdKnob is a framework for LLM-native advertising that addresses two challenges t
 
 We also construct **MI-KnobSet**, the first multi-level ad intensity preference dataset for LLM-native ads.
 
-## Code
+## Code and Dataset
 
-Codes will be uploaded soon.
+Codes will be uploaded soon. The MI-KnobSet dataset is coming soon.
 
 ## Citation
 
